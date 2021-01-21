@@ -216,6 +216,7 @@ class DatetimeColumn(column.ColumnBase):
             return pd.Timestamp(result, unit=self.time_unit)
         return result.astype(self.dtype)
 
+    @annotate("BINARY_OP", color="orange", domain="cudf_python")
     def binary_operator(self, op, rhs, reflect=False):
         if isinstance(rhs, cudf.DateOffset):
             return binop_offset(self, rhs, op)
@@ -248,7 +249,7 @@ class DatetimeColumn(column.ColumnBase):
         if reflect:
             lhs, rhs = rhs, lhs
 
-        return binop(lhs, rhs, op=op, out_dtype=out_dtype)
+        return libcudf.binaryop.binaryop(lhs, rhs, op, out_dtype)
 
     def fillna(self, fill_value=None, method=None):
         if fill_value is not None:
@@ -312,12 +313,6 @@ class DatetimeColumn(column.ColumnBase):
             return True
         else:
             return False
-
-
-@annotate("BINARY_OP", color="orange", domain="cudf_python")
-def binop(lhs, rhs, op, out_dtype):
-    out = libcudf.binaryop.binaryop(lhs, rhs, op, out_dtype)
-    return out
 
 
 def binop_offset(lhs, rhs, op):

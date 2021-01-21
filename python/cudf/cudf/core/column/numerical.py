@@ -69,6 +69,7 @@ class NumericalColumn(column.ColumnBase):
     def unary_operator(self, unaryop):
         return _numeric_column_unaryop(self, op=unaryop)
 
+    @annotate("BINARY_OP", color="orange", domain="cudf_python")
     def binary_operator(self, binop, rhs, reflect=False):
         int_dtypes = [
             np.dtype("int8"),
@@ -98,9 +99,21 @@ class NumericalColumn(column.ColumnBase):
                 f"'{binop}' operator not supported between "
                 f"{type(self).__name__} and {type(rhs).__name__}"
             )
-        return _numeric_column_binop(
-            lhs=self, rhs=rhs, op=binop, out_dtype=out_dtype, reflect=reflect
-        )
+
+        if reflect:
+            self, rhs = rhs, self
+
+        is_op_comparison = binop in ["lt", "gt", "le", "ge", "eq", "ne"]
+
+        if is_op_comparison:
+            out_dtype = "bool"
+
+        out = libcudf.binaryop.binaryop(self, rhs, binop, out_dtype)
+
+        if is_op_comparison:
+            out = out.fillna(binop == "ne")
+
+        return out
 
     def _apply_scan_op(self, op):
         return libcudf.reduce.scan(op, self, True)

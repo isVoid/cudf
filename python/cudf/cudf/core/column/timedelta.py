@@ -187,6 +187,7 @@ class TimeDeltaColumn(column.ColumnBase):
 
         return lhs, rhs, out_dtype
 
+    @annotate("BINARY_OP", color="orange", domain="cudf_python")
     def binary_operator(self, op, rhs, reflect=False):
         lhs, rhs = self, rhs
 
@@ -215,7 +216,7 @@ class TimeDeltaColumn(column.ColumnBase):
 
         if reflect:
             lhs, rhs = rhs, lhs
-        return binop(lhs, rhs, op=op, out_dtype=out_dtype)
+        return libcudf.binaryop.binaryop(lhs, rhs, op, out_dtype)
 
     def normalize_binop_value(self, other):
         if isinstance(other, cudf.Scalar):
@@ -521,12 +522,6 @@ class TimeDeltaColumn(column.ColumnBase):
         ) // cudf.Scalar(
             np.timedelta64(_numpy_to_pandas_conversion["ns"], "ns")
         )
-
-
-@annotate("BINARY_OP", color="orange", domain="cudf_python")
-def binop(lhs, rhs, op, out_dtype):
-    out = libcudf.binaryop.binaryop(lhs, rhs, op, out_dtype)
-    return out
 
 
 def determine_out_dtype(lhs_dtype, rhs_dtype):

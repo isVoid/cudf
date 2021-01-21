@@ -1325,7 +1325,7 @@ class ColumnBase(Column, Serializable):
             }
         )
 
-    def _binary_preprocess(self, fn, other, fill_value=None):
+    def _binary_preprocess(self, fn, other, fill_value=None, reflect=False):
         _truediv_int_dtype_corrections = {
             "int8": "float32",
             "int16": "float32",
@@ -1365,13 +1365,12 @@ class ColumnBase(Column, Serializable):
         return self, other, mask
 
     def _binary_op(self, fn, other, fill_value, reflect=False):
-        lhs, rhs, mask = self._binary_preprocess(fn, other, fill_value)
+        lhs, rhs, mask = self._binary_preprocess(fn, other, fill_value, reflect)
         res = lhs.binary_operator(fn, rhs, reflect)
         if mask is not None:
             res._base_mask = mask
         return res
-
-
+        
 def column_empty_like(column, dtype=None, masked=False, newsize=None):
     """Allocate a new column like the given *column*
     """
