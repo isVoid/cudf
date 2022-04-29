@@ -168,6 +168,9 @@ std::unique_ptr<column> string_segmented_reduction(column_view const& col,
                                                stream,
                                                mr)
                             ->release()[0]);
+
+  auto segmented_null_mask_mr =
+    result->null_count() == 0 ? mr : rmm::mr::get_current_device_resource();
   auto const [segmented_null_mask, segmented_null_count] =
     cudf::detail::segmented_null_mask_reduction(col.null_mask(),
                                                 offsets.begin(),
@@ -175,7 +178,7 @@ std::unique_ptr<column> string_segmented_reduction(column_view const& col,
                                                 offsets.begin() + 1,
                                                 null_handling,
                                                 stream,
-                                                mr);
+                                                segmented_null_mask_mr);
 
   // If the segmented null mask contains any null values, the segmented null mask
   // must be combined with the result null mask.
